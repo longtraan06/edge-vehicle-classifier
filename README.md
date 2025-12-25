@@ -1,7 +1,6 @@
 # 🚗 Vehicle Detection & Tracking System
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Edge Optimized](https://img.shields.io/badge/edge-optimized-brightgreen.svg)]()
 [![Jetson Nano](https://img.shields.io/badge/jetson_nano-tested-orange.svg)]()
 [![Performance](https://img.shields.io/badge/FPS-25--30-success.svg)]()
@@ -24,7 +23,7 @@
 - 🔔 **Alert System**: API + Telegram notifications
 - 📊 **Metadata Logging**: JSON logs with classification history
 - 🎥 **Video Recording**: Async video writer (non-blocking)
-- 💾 **Low Memory Footprint**: ~1.5GB RAM usage on Jetson Nano
+- 💾 **Low Memory Footprint**: ~1GB RAM usage on Jetson Nano
 
 ## 📋 Supported Classes
 
