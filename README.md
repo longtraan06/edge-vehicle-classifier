@@ -29,7 +29,6 @@
 
 - 🚗 Car
 - 🏍️ Motorbike  
-- 👤 Person
 - 🚚 Truck
 
 ## 🏗️ Architecture
