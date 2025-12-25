@@ -344,9 +344,7 @@ model:
 | Device | GPU | FPS | Notes |
 |--------|-----|-----|-------|
 | **Jetson Nano 4GB** | ❌ CPU-only | **25-30** | Production config |
-| Jetson Nano 4GB | ✅ GPU (CUDA) | ~15-20 | Higher power consumption |
-| Raspberry Pi 4 (4GB) | ❌ CPU-only | ~8-12 | Lower CPU clock |
-| Intel i5 (Desktop) | ❌ CPU-only | ~45-60 | Higher TDP |
+| Raspberry Pi 4 (4GB) | ❌ CPU-only | ~20-25 | Lower CPU clock |
 
 **Optimization Tips** (Already Applied):
 - ✅ Detection every 3rd frame (reduce inference load)
@@ -354,12 +352,6 @@ model:
 - ✅ Cached overlay rendering (ROI/tripwires)
 - ✅ NCNN ARM optimizations enabled
 - ✅ Smart quality scoring (lazy evaluation)
-
-**Further Tuning** (if needed):
-- Reduce `processing_width` to 416 → **35-40 FPS** (slightly less accurate)
-- Increase `detection_interval` to 5 → **30-35 FPS** (less frequent updates)
-- Disable `save_video` → +2-3 FPS
-- Use lower resolution camera source → +5-10 FPS
 
 ## 🔧 Development
 
@@ -425,117 +417,6 @@ tracker.update(bbox)
 predicted_box = tracker.predict()
 final_data = tracker.finalize_classification()
 ```
-
-## 🐛 Troubleshooting
-
-### "ModuleNotFoundError: No module named 'cv2'"
-
-```bash
-pip install opencv-python
-```
-
-### "ModuleNotFoundError: No module named 'ncnn'"
-
-NCNN needs special installation for ARM devices:
-
-```bash
-# For x86/AMD64 (PC)
-pip install ncnn-python
-
-# For ARM (Jetson Nano, Raspberry Pi) - build from source
-git clone https://github.com/Tencent/ncnn.git
-cd ncnn
-mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DNCNN_VULKAN=OFF ..
-make -j4
-cd ../python
-pip install -e .
-```
-
-### Camera Connection Issues
-
-**Test camera stream**:
-```bash
-python -c "import cv2; cap = cv2.VideoCapture('YOUR_URL'); print('Connected!' if cap.isOpened() else 'Failed')"
-```
-
-**Common issues**:
-- **RTSP timeout**: Check username/password, firewall
-- **HLS not playing**: Install latest OpenCV: `pip install opencv-python --upgrade`
-- **YouTube URL fails**: Update yt-dlp: `pip install yt-dlp --upgrade`
-
-### "cannot import name 'X' from 'Y'"
-
-Missing export in `__init__.py`. Fix:
-```bash
-# Re-run tests to check imports
-python test_system.py
-```
-
-### Web Interface Not Loading
-
-1. Check Flask is installed: `pip install Flask`
-2. Check port 5000 is not in use: `netstat -ano | findstr :5000` (Windows)
-3. Access via device IP, not localhost: `http://192.168.1.X:5000`
-4. Check firewall allows port 5000
-
-### Low FPS / High CPU Usage
-
-**Optimize settings.yaml**:
-```yaml
-camera:
-  processing_width: 416      # Reduce from 640
-  
-tracking:
-  detection_interval: 5      # Increase from 3
-  
-output:
-  save_video: false          # Disable recording
-  enable_ui: false           # Disable OpenCV window
-```
-
-**System-level**:
-- Close background apps
-- Use `htop` to check CPU usage
-- Consider overclocking (Jetson Nano)
-- Ensure cooling is adequate
-
-### Alert Not Sending
-
-1. **Check credentials in `.env`**:
-   ```bash
-   cat .env  # Linux/Mac
-   type .env # Windows
-   ```
-
-2. **Test API manually**:
-   ```python
-   import requests
-   response = requests.post(
-       "https://api-gw.autoprocai.com/smartaihub/push_alert",
-       data={"camera_id": "YOUR_ID", "ai_module_id": "YOUR_ID", "title": "test"},
-       files={"img_file": open("test.jpg", "rb")}
-   )
-   print(response.status_code, response.text)
-   ```
-
-3. **Check logs**: `tail -f logs/vehicle_detection.log`
-
-### "No module named 'pydantic'" or "No module named 'yaml'"
-
-```bash
-pip install pydantic pyyaml
-```
-
-### Video File Not Saving
-
-1. Check output directory exists: `mkdir -p output/videos`
-2. Check disk space: `df -h`
-3. Enable in settings:
-   ```yaml
-   output:
-     save_video: true
-   ```
 
 ## ❓ FAQ
 
@@ -630,20 +511,9 @@ output:
   save_video: false      # Disable video recording
 ```
 
-## 📄 License
-
-MIT License - See [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
 - YOLOv8 by Ultralytics
 - NCNN by Tencent
 - FilterPy for Kalman filtering
-
-## 📧 Contact
-
-For issues and questions, please open a GitHub issue.
-
----
-
-**Made with ❤️ for edge AI applications**
