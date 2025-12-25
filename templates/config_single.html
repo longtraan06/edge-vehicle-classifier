@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Cấu hình Single Camera Tracking</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            background-color: #f0f0f0; 
+            margin: 0; 
+            padding-top: 20px; 
+        }
+        .controls { 
+            margin-bottom: 20px; 
+            padding: 15px; 
+            background: white; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
+            text-align: center;
+        }
+        button { 
+            padding: 10px 20px; 
+            margin: 0 5px; 
+            border: 1px solid #ccc; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            background-color: #f8f9fa; 
+            color: #333; 
+            font-size: 14px;
+            font-weight: 500;
+        }
+        button.active { 
+            background-color: #007bff; 
+            color: white; 
+            border-color: #007bff; 
+        }
+        button.save { 
+            background-color: #28a745; 
+            color: white; 
+            border-color: #28a745; 
+        }
+        button.start { 
+            background-color: #17a2b8; 
+            color: white; 
+            border-color: #17a2b8;
+            font-size: 16px;
+            padding: 12px 30px;
+        }
+        button.clear { 
+            background-color: #dc3545; 
+            color: white; 
+            border-color: #dc3545; 
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .video-container { 
+            position: relative; 
+            max-width: 800px; 
+            width: 95%; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #videoFeed { 
+            display: block; 
+            width: 100%; 
+            height: auto; 
+            background-color: #333; 
+        }
+        #drawCanvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            cursor: crosshair; 
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            display: none;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎥 Single Camera Vehicle Tracking</h1>
+    <div class="subtitle">Bước 1: Vẽ ROI và Tripwires → Bước 2: Lưu cấu hình → Bước 3: Bắt đầu hệ thống</div>
+    
+    <div class="controls">
+        <button id="btnRoi">📐 Vẽ Khu vực (ROI)</button>
+        <button id="btnLine">📏 Vẽ Đường kẻ (Tripwire)</button>
+        <button id="btnClear" class="clear">🗑️ Xóa tất cả</button>
+        <br><br>
+        <button id="btnSave" class="save">💾 Lưu Cấu hình</button>
+        <button id="btnStart" class="start" disabled>🚀 Bắt đầu Tracking</button>
+    </div>
+    
+    <div class="video-container" id="videoContainer">
+        <img id="videoFeed" src="/video_feed" alt="Đang tải video stream...">
+        <canvas id="drawCanvas"></canvas>
+    </div>
+    
+    <div id="statusMessage" class="status"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('drawCanvas');
+            const videoFeed = document.getElementById('videoFeed');
+            const ctx = canvas.getContext('2d');
+
+            let currentMode = 'none';
+            let roiPoints = [];
+            let tripwires = [];
+            let currentLineStart = null;
+            let configSaved = false;
+
+            const btnRoi = document.getElementById('btnRoi');
+            const btnLine = document.getElementById('btnLine');
+            const btnClear = document.getElementById('btnClear');
+            const btnSave = document.getElementById('btnSave');
+            const btnStart = document.getElementById('btnStart');
+            const statusMessage = document.getElementById('statusMessage');
+
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = 'status ' + type;
+                setTimeout(() => {
+                    statusMessage.className = 'status';
+                }, 5000);
+            }
+
+            function updateButtonStates() {
+                btnRoi.classList.toggle('active', currentMode === 'roi');
+                btnLine.classList.toggle('active', currentMode === 'line');
+            }
+
+            btnRoi.addEventListener('click', () => {
+                currentMode = currentMode === 'roi' ? 'none' : 'roi';
+                updateButtonStates();
+            });
+
+            btnLine.addEventListener('click', () => {
+                currentMode = currentMode === 'line' ? 'none' : 'line';
+                updateButtonStates();
+            });
+
+            btnClear.addEventListener('click', () => {
+                roiPoints = [];
+                tripwires = [];
+                currentLineStart = null;
+                currentMode = 'none';
+                configSaved = false;
+                btnStart.disabled = true;
+                updateButtonStates();
+                redrawCanvas();
+                showStatus('Đã xóa tất cả cấu hình', 'success');
+            });
+
+            btnSave.addEventListener('click', () => {
+                if (roiPoints.length === 0 && tripwires.length === 0) {
+                    showStatus('⚠️ Vui lòng vẽ ít nhất ROI hoặc Tripwire trước khi lưu!', 'error');
+                    return;
+                }
+
+                const config = {
+                    roi: roiPoints,
+                    tripwires: tripwires,
+                    displayWidth: canvas.width
+                };
+
+                btnSave.disabled = true;
+                btnSave.textContent = '⏳ Đang lưu...';
+
+                fetch('/save_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        configSaved = true;
+                        btnStart.disabled = false;
+                        showStatus('✅ Đã lưu cấu hình thành công! Bây giờ có thể bắt đầu tracking.', 'success');
+                        btnSave.textContent = '💾 Đã lưu';
+                    } else {
+                        showStatus('❌ Lỗi: ' + (data.message || 'Không thể lưu cấu hình'), 'error');
+                        btnSave.disabled = false;
+                        btnSave.textContent = '💾 Lưu Cấu hình';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showStatus('❌ Lỗi kết nối: ' + error.message, 'error');
+                    btnSave.disabled = false;
+                    btnSave.textContent = '💾 Lưu Cấu hình';
+                });
+            });
+
+            btnStart.addEventListener('click', () => {
+                if (!configSaved) {
+                    showStatus('⚠️ Vui lòng lưu cấu hình trước khi bắt đầu!', 'error');
+                    return;
+                }
+
+                btnStart.disabled = true;
+                btnStart.textContent = '⏳ Đang khởi động...';
+
+                fetch('/start_system', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'starting') {
+                        showStatus('🚀 Hệ thống đã bắt đầu tracking! Kiểm tra terminal để xem tiến trình.', 'success');
+                        btnStart.textContent = '✅ Đã bắt đầu';
+                        
+                        // Disable các nút khác
+                        btnRoi.disabled = true;
+                        btnLine.disabled = true;
+                        btnClear.disabled = true;
+                        btnSave.disabled = true;
+                    } else {
+                        showStatus('❌ Không thể khởi động hệ thống', 'error');
+                        btnStart.disabled = false;
+                        btnStart.textContent = '🚀 Bắt đầu Tracking';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showStatus('❌ Lỗi kết nối: ' + error.message, 'error');
+                    btnStart.disabled = false;
+                    btnStart.textContent = '🚀 Bắt đầu Tracking';
+                });
+            });
+
+            function resizeCanvas() {
+                const rect = videoFeed.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                redrawCanvas();
+            }
+
+            function redrawCanvas() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Vẽ ROI
+                if (roiPoints.length > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(roiPoints[0].x, roiPoints[0].y);
+                    roiPoints.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+                    if (roiPoints.length > 2) ctx.closePath();
+                    ctx.strokeStyle = 'rgba(255, 255, 0, 0.9)';
+                    ctx.fillStyle = 'rgba(255, 255, 0, 0.2)';
+                    ctx.lineWidth = 2;
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Vẽ các điểm
+                    roiPoints.forEach(p => {
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
+                        ctx.fillStyle = 'yellow';
+                        ctx.fill();
+                    });
+                }
+                
+                // Vẽ Tripwires
+                tripwires.forEach(line => {
+                    ctx.beginPath();
+                    ctx.moveTo(line.start.x, line.start.y);
+                    ctx.lineTo(line.end.x, line.end.y);
+                    ctx.strokeStyle = 'rgba(255, 0, 0, 0.9)';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    // Vẽ điểm đầu và cuối
+                    ctx.beginPath();
+                    ctx.arc(line.start.x, line.start.y, 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = 'red';
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(line.end.x, line.end.y, 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = 'red';
+                    ctx.fill();
+                });
+                
+                // Vẽ điểm tạm thời cho line
+                if (currentLineStart) {
+                    ctx.beginPath();
+                    ctx.arc(currentLineStart.x, currentLineStart.y, 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = 'orange';
+                    ctx.fill();
+                }
+            }
+
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                if (currentMode === 'roi') {
+                    roiPoints.push({ x, y });
+                } else if (currentMode === 'line') {
+                    if (!currentLineStart) {
+                        currentLineStart = { x, y };
+                    } else {
+                        tripwires.push({ start: currentLineStart, end: { x, y } });
+                        currentLineStart = null;
+                        currentMode = 'none';
+                        updateButtonStates();
+                    }
+                }
+                redrawCanvas();
+            });
+
+            videoFeed.onload = resizeCanvas;
+            window.addEventListener('resize', resizeCanvas);
+            
+            if (videoFeed.complete) {
+                resizeCanvas();
+            }
+        });
+    </script>
+</body>
+</html>

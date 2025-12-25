@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chọn Camera để Cấu hình</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f4; margin: 40px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        .camera-list { list-style: none; padding: 0; }
+        .camera-list li { background: #e9ecef; margin-bottom: 10px; padding: 15px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .camera-list a { text-decoration: none; font-weight: bold; color: #007bff; }
+        .start-button { display: block; width: 100%; padding: 15px; font-size: 18px; color: white; background-color: #28a745; border: none; border-radius: 5px; cursor: pointer; margin-top: 20px; }
+        .start-button:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chọn Camera để Cấu hình</h1>
+        <ul class="camera-list">
+            {% for i in range(num_cameras) %}
+            <li>
+                <span>Camera {{ i }}</span>
+                <a href="/config/{{ i }}">Cấu hình &rarr;</a>
+            </li>
+            {% endfor %}
+        </ul>
+        <button id="startButton" class="start-button">Hoàn tất và Bắt đầu Hệ thống</button>
+    </div>
+
+    <script>
+        document.getElementById('startButton').addEventListener('click', function() {
+            if (confirm('Bạn có chắc muốn bắt đầu hệ thống với các cấu hình đã lưu?')) {
+                fetch('/start_system', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'starting') {
+                            alert('Hệ thống đang bắt đầu! Vui lòng kiểm tra console của Raspberry Pi để xem log.');
+                            document.body.innerHTML = '<h1>Hệ thống đã bắt đầu. Bạn có thể đóng tab này.</h1>';
+                        }
+                    });
+            }
+        });
+    </script>
+</body>
+</html>

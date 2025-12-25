@@ -1,0 +1,36 @@
+# Vehicle Detection System - Python Dependencies
+
+# Core dependencies
+numpy>=1.21.0
+opencv-python>=4.5.0
+scipy>=1.7.0
+
+# NCNN inference
+# Note: Install ncnn-python from: https://github.com/Tencent/ncnn/releases
+# pip install ncnn-python (or build from source for ARM)
+
+# Kalman Filter
+filterpy>=1.4.5
+
+# Configuration
+pydantic>=2.0.0
+pyyaml>=6.0
+
+# Web Framework
+Flask>=2.3.0
+
+# HTTP requests
+requests>=2.28.0
+
+# YouTube stream support
+yt-dlp>=2023.3.4
+
+# Development dependencies (optional)
+pytest>=7.0.0
+pytest-cov>=4.0.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
+
+# Optional: For better logging colors on Windows
+colorama>=0.4.6

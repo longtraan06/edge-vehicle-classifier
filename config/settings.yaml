@@ -1,0 +1,58 @@
+# Vehicle Detection System Configuration
+# This file contains all configuration parameters for the system
+
+camera:
+  source: "http://192.168.28.78:8080/68da6f23efaf7495453e98c0e497c916/hls/gqbb9Lhhcu/qyzxxQQT63/s.m3u8"
+  processing_width: 640
+  fps: 25.0
+
+model:
+  param_path: "models/model_best_data/model.ncnn.param"
+  bin_path: "models/model_best_data/model.ncnn.bin"
+  input_size: 640
+  conf_threshold: 0.3
+  iou_threshold: 0.5
+  per_class_thresholds:
+    car: 0.73
+    motorbike: 0.63
+    person: 0.15
+    truck: 0.3
+
+tracking:
+  detection_interval: 3
+  iou_threshold: 0.3
+  max_age: 10
+  min_hits_to_display: 2
+  min_hits_for_classification: 5
+  max_history_size: 15
+
+alert:
+  api_url: "https://api-gw.autoprocai.com/smartaihub/push_alert"
+  camera_id: null  # Set via environment variable
+  ai_module_id: null  # Set via environment variable
+  zone_id: ""
+  telegram_bot_token: null  # Set via environment variable
+  telegram_chat_id: null  # Set via environment variable
+  queue_maxsize: 20
+  skip_person_alerts: true
+
+web:
+  enabled: true
+  host: "0.0.0.0"
+  port: 5000
+  stream_fps: 5
+
+output:
+  save_video: false
+  video_output_path: "output/videos/output.avi"
+  video_fps: 20.0
+  video_codec: "XVID"
+  metadata_file: "data/logs/vehicle_logs.json"
+  enable_ui: true
+
+logging:
+  level: "INFO"
+  log_dir: "logs"
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

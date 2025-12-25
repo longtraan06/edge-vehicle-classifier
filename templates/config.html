@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Cấu hình cho Camera {{ cam_id }}</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background-color: #f0f0f0; margin: 0; padding-top: 20px; }
+        .controls { margin-bottom: 20px; padding: 10px; background: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        button { padding: 8px 15px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background-color: #f8f9fa; color: #333; font-size: 14px; }
+        button.active { background-color: #007bff; color: white; border-color: #007bff; }
+        button.save { background-color: #28a745; color: white; border-color: #28a745; }
+        button.clear { background-color: #dc3545; color: white; border-color: #dc3545; }
+        .video-container { position: relative; max-width: 800px; width: 95%; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        #videoFeed { display: block; width: 100%; height: auto; background-color: #333; }
+        #drawCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
+    </style>
+</head>
+<body>
+    <h1>Cấu hình cho Camera {{ cam_id }}</h1>
+    <div class="controls">
+        <button id="btnRoi">Vẽ Khu vực (ROI)</button>
+        <button id="btnLine">Vẽ Đường kẻ</button>
+        <button id="btnClear" class="clear">Xóa</button>
+        <button id="btnSave" class="save">Lưu và Quay lại</button>
+    </div>
+    <div class="video-container" id="videoContainer">
+        <img id="videoFeed" src="{{ url_for('video_feed', cam_id=cam_id) }}" alt="Đang tải video stream...">
+        <canvas id="drawCanvas"></canvas>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('drawCanvas');
+            const videoFeed = document.getElementById('videoFeed');
+            const ctx = canvas.getContext('2d');
+            const cam_id = {{ cam_id }};
+
+            let currentMode = 'none';
+            let roiPoints = [];
+            let tripwires = [];
+            let currentLineStart = null;
+
+            const btnRoi = document.getElementById('btnRoi');
+            const btnLine = document.getElementById('btnLine');
+            const btnClear = document.getElementById('btnClear');
+            const btnSave = document.getElementById('btnSave');
+
+            function updateButtonStates() {
+                btnRoi.classList.toggle('active', currentMode === 'roi');
+                btnLine.classList.toggle('active', currentMode === 'line');
+            }
+
+            btnRoi.onclick = () => { currentMode = (currentMode === 'roi' ? 'none' : 'roi'); currentLineStart = null; updateButtonStates(); };
+            btnLine.onclick = () => { currentMode = (currentMode === 'line' ? 'none' : 'line'); currentLineStart = null; updateButtonStates(); };
+            
+            btnClear.onclick = () => {
+                if (confirm('Bạn có chắc muốn xóa tất cả các vùng đã vẽ?')) {
+                    roiPoints = [];
+                    tripwires = [];
+                    currentLineStart = null;
+                    redrawCanvas();
+                }
+            };
+            
+            btnSave.onclick = async () => {
+                const configData = {
+                    roi: roiPoints,
+                    tripwires: tripwires,
+                    displayWidth: videoFeed.clientWidth // Gửi chiều rộng hiển thị về server
+                };
+                try {
+                    const response = await fetch(`/save_config/${cam_id}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(configData)
+                    });
+                    if (response.ok) {
+                        alert('Lưu cấu hình thành công!');
+                        window.location.href = '/';
+                    } else {
+                        alert('Lỗi: Không thể lưu cấu hình trên server.');
+                    }
+                } catch (error) {
+                    console.error('Lỗi khi lưu:', error);
+                    alert('Lỗi kết nối đến server!');
+                }
+            };
+            
+            function resizeCanvas() {
+                canvas.width = videoFeed.clientWidth;
+                canvas.height = videoFeed.clientHeight;
+                redrawCanvas();
+            }
+
+            function redrawCanvas() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (roiPoints.length > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(roiPoints[0].x, roiPoints[0].y);
+                    roiPoints.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+                    if (roiPoints.length > 2) ctx.closePath();
+                    ctx.strokeStyle = 'rgba(255, 255, 0, 0.9)';
+                    ctx.fillStyle = 'rgba(255, 255, 0, 0.2)';
+                    ctx.lineWidth = 2;
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                tripwires.forEach(line => {
+                    ctx.beginPath();
+                    ctx.moveTo(line.start.x, line.start.y);
+                    ctx.lineTo(line.end.x, line.end.y);
+                    ctx.strokeStyle = 'rgba(255, 0, 0, 0.9)';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                });
+            }
+
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                if (currentMode === 'roi') {
+                    roiPoints.push({ x, y });
+                } else if (currentMode === 'line') {
+                    if (!currentLineStart) {
+                        currentLineStart = { x, y };
+                    } else {
+                        tripwires.push({ start: currentLineStart, end: { x, y } });
+                        currentLineStart = null;
+                        // Tự động tắt chế độ vẽ đường kẻ sau khi vẽ xong 1 đường
+                        currentMode = 'none';
+                        updateButtonStates();
+                    }
+                }
+                redrawCanvas();
+            });
+
+            // Đảm bảo canvas được resize khi ảnh video tải xong hoặc cửa sổ thay đổi kích thước
+            videoFeed.onload = resizeCanvas;
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Nếu ảnh đã được cache và tải xong trước khi onload được gán
+            if (videoFeed.complete) {
+                resizeCanvas();
+            }
+        });
+    </script>
+</body>
+</html>
