@@ -8,30 +8,31 @@
 
 **A high-performance vehicle detection and tracking system specifically optimized for edge devices** - Achieving **25-30 FPS** on **Jetson Nano (4GB) without GPU** using **YOLOv8 NCNN** (CPU-only) and **Kalman Filter tracking**.
 
-> 🚀 **Edge-First Design**: Unlike GPU-dependent solutions, this system is built from the ground up for ARM CPUs, making it perfect for deployment on Jetson Nano, Raspberry Pi, and other edge devices with limited resources.
+>  **Edge-First Design**: Unlike GPU-dependent solutions, this system is built from the ground up for ARM CPUs, making it perfect for deployment on Jetson Nano, Raspberry Pi, and other edge devices with limited resources.
 
-> ⚡ **Production-Ready Performance**: Tested extensively on Jetson Nano 4GB in real-world conditions - sustains 25-30 FPS for hours with stable thermals (~10W power consumption).
+>  **Production-Ready Performance**: Tested extensively on Jetson Nano 4GB in real-world conditions - sustains 25-30 FPS for hours with stable thermals (~10W power consumption).
 
-## ✨ Features
+##  Features
 
-- ⚡ **Edge-Optimized Performance**: 25-30 FPS on Jetson Nano **without GPU** (CPU-only)
-- 🎯 **Real-time Detection**: YOLOv8 NCNN with ARM CPU optimizations (NEON, FP16)
-- 🎬 **Multi-object Tracking**: Kalman Filter with IoU matching
-- 🏆 **Voting-based Classification**: Robust classification from multiple frames
-- 📸 **Best Frame Selection**: Quality score-based frame selection
-- 🌐 **Web Interface**: Configure ROI & tripwires via browser
-- 🔔 **Alert System**: API + Telegram notifications
-- 📊 **Metadata Logging**: JSON logs with classification history
-- 🎥 **Video Recording**: Async video writer (non-blocking)
-- 💾 **Low Memory Footprint**: ~1GB RAM usage on Jetson Nano
+-  **Edge-Optimized Performance**: 25-30 FPS on Jetson Nano **without GPU** (CPU-only)
+-  **Real-time Detection**: YOLOv8 NCNN with ARM CPU optimizations (NEON, FP16)
+-  **Multi-object Tracking**: Kalman Filter with IoU matching
+-  **Voting-based Classification**: Robust classification from multiple frames
+-  **Best Frame Selection**: Quality score-based frame selection
+-  **Web Interface**: Configure ROI & tripwires via browser
+-  **Alert System**: API + Telegram notifications
+-  **Metadata Logging**: JSON logs with classification history
+-  **Video Recording**: Async video writer (non-blocking)
+-  **Low Memory Footprint**: ~1GB RAM usage on Jetson Nano
 
-## 📋 Supported Classes
+##  Supported Classes
 
-- 🚗 Car
-- 🏍️ Motorbike  
-- 🚚 Truck
+-  Car
+-  Motorbike  
+-  Truck
+  can be expand depend on your model
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 Vehicle_detection/
@@ -46,9 +47,9 @@ Vehicle_detection/
 └── logs/            # Application logs
 ```
 
-## 🚀 Quick Start
+##  Quick Start
 
-> 💡 **Optimized for Edge Devices**: This system runs at **25-30 FPS on Jetson Nano without GPU**. Ideal for production deployment on ARM-based edge devices.
+>  **Optimized for Edge Devices**: This system runs at **25-30 FPS on Jetson Nano without GPU**. Ideal for production deployment on ARM-based edge devices.
 
 ### 1. Installation
 
@@ -124,7 +125,7 @@ TELEGRAM_BOT_TOKEN=7706726930:AAE0gDgfaNIHvk...   # Your bot token
 TELEGRAM_CHAT_ID=-1003295228713                   # Your chat/group ID
 ```
 
-**⚠️ Important**: 
+** Important**: 
 - `.env` file is **NOT committed to git** (already in `.gitignore`)
 - Use `settings.yaml` for technical configs
 - Use `.env` for sensitive credentials
@@ -154,7 +155,7 @@ python main.py
 python main.py  # Will use last saved configuration
 ```
 
-## 📖 Usage
+##  Usage
 
 ### Basic Usage
 
@@ -188,7 +189,7 @@ class CustomAlertService(AlertService):
         pass
 ```
 
-## ⚙️ Configuration Guide
+##  Configuration Guide
 
 ### Settings Priority
 
@@ -307,9 +308,9 @@ PROCESSING_WIDTH=640
 DETECTION_INTERVAL=3
 ```
 
-## 📊 Performance Benchmarks
+##  Performance Benchmarks
 
-### 🎯 **Real-World Performance: Jetson Nano 4GB (WITHOUT GPU)**
+###  **Real-World Performance: Jetson Nano 4GB (WITHOUT GPU)**
 
 **Tested Configuration** (Production Settings):
 ```yaml
@@ -322,22 +323,22 @@ model:
 ```
 
 **Achieved Performance**:
-- ⚡ **FPS**: **25-30 FPS** (real-time) @ 640x640 processing
-- 🎯 **Detection Rate**: Every 3rd frame (~8-10 detections/sec)
-- 💻 **CPU Usage**: ~70-80% (4-core ARM A57)
-- 💾 **Memory**: ~1.5GB RAM
-- 🌡️ **Thermal**: Stable with heatsink (no throttling)
-- 🔋 **Power**: ~10W average
+-  **FPS**: **25-30 FPS** (real-time) @ 640x640 processing
+-  **Detection Rate**: Every 3rd frame (~8-10 detections/sec)
+-  **CPU Usage**: ~70-80% (4-core ARM A57)
+-  **Memory**: ~1.5GB RAM
+-  **Thermal**: Stable with heatsink (no throttling)
+-  **Power**: ~10W average
 
 > **Note**: Performance achieved using **NCNN CPU-only inference** (no GPU/CUDA). NCNN optimizations include NEON SIMD, FP16 arithmetic, and Winograd convolution for ARM processors.
 
 **Why This Matters**:
-- ✅ **No GPU Required**: Works on any ARM device
-- ✅ **Lower Power**: CPU inference uses less power than GPU
-- ✅ **Cost-Effective**: No need for expensive GPU-enabled boards
-- ✅ **Production-Ready**: Sustained 25-30 FPS for hours without degradation
+-  **No GPU Required**: Works on any ARM device
+-  **Lower Power**: CPU inference uses less power than GPU
+-  **Cost-Effective**: No need for expensive GPU-enabled boards
+-  **Production-Ready**: Sustained 25-30 FPS for hours without degradation
 
-### 📈 Performance Comparison
+###  Performance Comparison
 
 | Device | GPU | FPS | Notes |
 |--------|-----|-----|-------|
@@ -345,13 +346,13 @@ model:
 | Raspberry Pi 4 (4GB) | ❌ CPU-only | ~20-25 | Lower CPU clock |
 
 **Optimization Tips** (Already Applied):
-- ✅ Detection every 3rd frame (reduce inference load)
-- ✅ Async video writer (non-blocking I/O)
-- ✅ Cached overlay rendering (ROI/tripwires)
-- ✅ NCNN ARM optimizations enabled
-- ✅ Smart quality scoring (lazy evaluation)
+-  Detection every 3rd frame (reduce inference load)
+-  Async video writer (non-blocking I/O)
+-  Cached overlay rendering (ROI/tripwires)
+-  NCNN ARM optimizations enabled
+-  Smart quality scoring (lazy evaluation)
 
-## 🔧 Development
+##  Development
 
 ### Project Structure
 
@@ -390,7 +391,7 @@ flake8 .
 mypy .
 ```
 
-## 📝 API Reference
+##  API Reference
 
 ### YOLOv8Detector
 
@@ -416,7 +417,7 @@ predicted_box = tracker.predict()
 final_data = tracker.finalize_classification()
 ```
 
-## ❓ FAQ
+##  FAQ
 
 ### Q: How do I change camera source after initial setup?
 
